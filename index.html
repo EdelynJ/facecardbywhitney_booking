@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FACECARDBY Whitney - Online Booking</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f8f8f8; }
+    header { background: #000; color: #fff; padding: 40px 20px; text-align: center; }
+    nav { display: flex; justify-content: center; background: #111; }
+    nav button { background: none; border: none; color: #fff; padding: 15px 30px; cursor: pointer; }
+    nav button:hover { background: #444; }
+    .content { display: none; max-width: 500px; margin: 30px auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    .content.active { display: block; }
+    .policy { background: #ffe0e0; padding: 20px; border: 1px solid #ffaaaa; border-radius: 8px; text-align: center; }
+    #bookingForm { display: none; }
+    #bookingForm input, #bookingForm textarea, #bookingForm button, #bookingForm select { 
+      width: calc(100% - 22px); /* Adjust width to account for padding and border */
+      padding: 10px; 
+      margin: 8px 0; 
+      border: 1px solid #ccc; 
+      border-radius: 4px; 
+      box-sizing: border-box; /* Ensure padding is included in width */
+    }
+    #bookingForm button { background: #000; color: #fff; cursor: pointer; }
+    #popupOverlay, #dmPopupOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); align-items: center; justify-content: center; }
+    #popupMessage, #dmPopupMessage { background: #fff; padding: 30px; border-radius: 8px; text-align: center; max-width: 300px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>FACECARDBY Whitney</h1>
+    <p>Book your makeup appointment easily</p>
+  </header>
+  <nav>
+    <button onclick="showSection('book')">Book Now</button>
+    <button onclick="showSection('admin')">Admin</button>
+  </nav>
+
+  <div id="book" class="content active">
+    <div id="policy" class="policy">
+      <p><strong>Please read before booking:</strong><br> By booking an appointment, you agree to our booking policy. Cancellations or reschedules are allowed only before your appointment.</p>
+      <button onclick="agreePolicy()">I Agree</button>
+    </div>
+    <form id="bookingForm">
+      <h2>Book Your Appointment</h2>
+      <input id="name" placeholder="Name" required>
+      <input id="email" placeholder="Email" required>
+      <input id="phone" placeholder="Phone" required>
+      <input id="date" type="date" required>
+      <input id="time" type="time" required>
+      <select id="makeupType" required>
+        <option value="">Select Makeup Type</option>
+        <option value="bridal">Bridal</option>
+        <option value="bridal_package">Bridal Package</option>
+        <option value="debut">Debut</option>
+        <option value="special_occasion">Special Occasion</option>
+        <option value="photoshoot">Photoshoot</option>
+        <option value="graduation">Graduation</option>
+        <option value="other">Other</option>
+      </select>
+      <textarea id="details" placeholder="Additional Details (if any)"></textarea>
+      <button type="submit">Book Now</button>
+    </form>
+  </div>
+
+  <div id="admin" class="content">
+    <h2>Admin Login</h2>
+    <input type="password" id="adminPassword" placeholder="Enter Admin Password">
+    <button onclick="checkAdmin()">Login</button>
+    <div id="bookingList" style="display:none;">
+      <h3>Active Bookings:</h3>
+      <ul id="bookings"></ul>
+      <h3>Completed Bookings:</h3>
+      <ul id="doneBookings"></ul>
+    </div>
+  </div>
+
+  <div id="popupOverlay">
+    <div id="popupMessage">
+      <p>Your booking has been submitted! ✅</p>
+      <button onclick="showDMPopup()">OK</button>
+    </div>
+  </div>
+
+  <div id="dmPopupOverlay">
+    <div id="dmPopupMessage">
+      <p>Thank you! Please <a href="https://www.facebook.com/jm.whitney.torres" target="_blank">message us directly</a> for rates and availability.</p>
+      <button onclick="closeDMPopup()">Close</button>
+    </div>
+  </div>
+
+  <script>
+    function showSection(id) {
+      document.querySelectorAll('.content').forEach(sec => sec.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    function agreePolicy() {
+      document.getElementById('policy').style.display = 'none';
+      document.getElementById('bookingForm').style.display = 'block';
+    }
+
+    function openPopup() {
+      document.getElementById('popupOverlay').style.display = 'flex';
+    }
+    function showDMPopup() {
+      document.getElementById('popupOverlay').style.display = 'none';
+      document.getElementById('dmPopupOverlay').style.display = 'flex';
+    }
+    function closeDMPopup() {
+      document.getElementById('dmPopupOverlay').style.display = 'none';
+    }
+
+    document.getElementById('bookingForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      // Collect booking data
+      const bookingData = {
+        name: document.getElementById('name').value,
+        email: document.getElementById('email').value,
+        phone: document.getElementById('phone').value,
+        date: document.getElementById('date').value,
+        time: document.getElementById('time').value,
+        makeupType: document.getElementById('makeupType').value,
+        details: document.getElementById('details').value
+      };
+
+      // Save booking to localStorage
+      let bookings = JSON.parse(localStorage.getItem('bookings')) || [];
+      bookings.push(bookingData);
+      localStorage.setItem('bookings', JSON.stringify(bookings));
+
+      // Reset form and show popup
+      this.reset();
+      openPopup();
+    });
+
+    function checkAdmin() {
+      const pw = document.getElementById('adminPassword').value;
+      if (pw === 'josemari') {
+        document.getElementById('bookingList').style.display = 'block';
+        displayBookings();
+      } else {
+        alert('Incorrect password');
+      }
+    }
+
+    function displayBookings() {
+      const bookings = JSON.parse(localStorage.getItem('bookings') || '[]');
+      const done = JSON.parse(localStorage.getItem('doneBookings') || '[]') || [];
+      const list = document.getElementById('bookings');
+      const doneList = document.getElementById('doneBookings');
+      list.innerHTML = '';
+      doneList.innerHTML = '';
+
+      bookings.forEach((b, index) => {
+        const li = document.createElement('li');
+        li.innerText = `${b.name} - ${b.email} - ${b.phone} - ${b.date} ${b.time} - ${b.makeupType} - ${b.details}`;
+        const btn = document.createElement('button');
+        btn.innerText = 'Done';
+        btn.onclick = () => markAsDone(index);
+        li.appendChild(btn);
+        list.appendChild(li);
+      });
+
+      done.forEach((b, index) => {
+        const li = document.createElement('li');
+        li.innerText = `${b.name} - ${b.email} - ${b.phone} - ${b.date} ${b.time} - ${b.makeupType} - ${b.details}`;
+        const btn = document.createElement('button');
+        btn.innerText = 'Delete';
+        btn.onclick = () => deleteDone(index);
+        li.appendChild(btn);
+        doneList.appendChild(li);
+      });
+    }
+
+    function markAsDone(index) {
+      let bookings = JSON.parse(localStorage.getItem('bookings') || '[]');
+      let done = JSON.parse(localStorage.getItem('doneBookings') || '[]') || [];
+      const completed = bookings.splice(index, 1)[0];
+      done.push(completed);
+      localStorage.setItem('bookings', JSON.stringify(bookings));
+      localStorage.setItem('doneBookings', JSON.stringify(done));
+      displayBookings();
+    }
+
+    function deleteDone(index) {
+      let done = JSON.parse(localStorage.getItem('doneBookings') || '[]');
+      done.splice(index, 1);
+      localStorage.setItem('doneBookings', JSON.stringify(done));
+      displayBookings();
+    }
+  </script>
+</body>
+</html>
